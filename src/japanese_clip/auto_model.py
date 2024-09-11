@@ -70,6 +70,7 @@ def _download(repo_id: str, cache_dir: str):
 def load(
         model_name: str,
         device: Union[str, torch.device] = "cuda" if torch.cuda.is_available() else "cpu",
+        local_path = None, model_class_from_local = "clip",
         **kwargs
 ):
     """
@@ -80,16 +81,22 @@ def load(
     Return:
         (torch.nn.Module, A torchvision transform)
     """
-    if model_name in MODELS.keys():
-        ModelClass = CLIPModel if 'clip' in model_name else CLOOBModel
-    elif os.path.exists(model_name):
-        assert os.path.exists(os.path.join(model_name, CONFIG_FILE))
-        with open(os.path.join(model_name, CONFIG_FILE), "r", encoding="utf-8") as f:
-            j = json.load(f)
-        ModelClass = MODEL_CLASSES[j["model_type"]]
+    if local_path is not None:
+        ModelClass = CLIPModel if model_class_from_local == "clip" else "CLOOBModel"
+        model = ModelClass.from_pretrained(local_path, **kwargs)
+    
     else:
-        RuntimeError(f"Model {model_name} not found; available models = {available_models()}")
+        if model_name in MODELS.keys():
+            ModelClass = CLIPModel if 'clip' in model_name else CLOOBModel
+        elif os.path.exists(model_name):
+            assert os.path.exists(os.path.join(model_name, CONFIG_FILE))
+            with open(os.path.join(model_name, CONFIG_FILE), "r", encoding="utf-8") as f:
+                j = json.load(f)
+            ModelClass = MODEL_CLASSES[j["model_type"]]
+        else:
+            RuntimeError(f"Model {model_name} not found; available models = {available_models()}")
 
-    model = ModelClass.from_pretrained(model_name, **kwargs)
+        model = ModelClass.from_pretrained(model_name, **kwargs)
+        
     model = model.eval().requires_grad_(False).to(device)
     return model, _transform(model.config.vision_config.image_size)

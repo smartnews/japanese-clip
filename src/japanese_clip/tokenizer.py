@@ -18,11 +18,11 @@ import torch
 from transformers import T5Tokenizer
 
 
-def load_tokenizer():
+def load_tokenizer(pretrained_model_name_or_path = "rinna/japanese-roberta-base"):
     """
     https://huggingface.co/rinna/japanese-roberta-base
     """
-    tokenizer = T5Tokenizer.from_pretrained("rinna/japanese-roberta-base")
+    tokenizer = T5Tokenizer.from_pretrained(pretrained_model_name_or_path)
     tokenizer.do_lower_case = True  # due to some bug of tokenizer config loading
     return tokenizer
 
